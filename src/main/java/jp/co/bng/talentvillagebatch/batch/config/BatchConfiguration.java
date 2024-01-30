@@ -10,7 +10,6 @@ import org.springframework.batch.item.support.ClassifierCompositeItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import jp.co.bng.talentvillagebatch.batch.chunk.ChatProcessor;
 import jp.co.bng.talentvillagebatch.batch.chunk.ChatReader;
@@ -30,7 +29,7 @@ public class BatchConfiguration {
 	// チャット履歴同期Job定義
 	// ====================================================================
 	@Bean
-	@Scheduled(cron="${scheduled.cron.task}")
+//	@Scheduled(cron="${scheduled.cron.task}")
 	public Job chatHistorySynchronizeJob(JobListener jobListener, Step stepChatSync, Step stepSendGrid) {
 		return jobBuilderFactory.get("chatHistorySynchronizeJob")
 			.incrementer(new RunIdIncrementer())
