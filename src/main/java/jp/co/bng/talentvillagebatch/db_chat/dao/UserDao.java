@@ -34,7 +34,7 @@ public class UserDao extends DbBaseDao {
 		sql.append("    , businessmobilephonenumber__c as businessmobilephonenumber ");
 		sql.append("    , isactive ");
 		sql.append("    , systemmodstamp ");
-		sql.append("    , 'alias' ");
+		sql.append("    , alias ");
 		sql.append("    , external_id__c               as externalId ");
 		sql.append("    , createddate ");
 		sql.append("    , communitynickname ");
@@ -48,7 +48,7 @@ public class UserDao extends DbBaseDao {
 		sql.append("    , _hc_err                      as hcErr ");
 		sql.append("    , slack_id__c                  as slackId ");
 		sql.append("FROM ");
-		sql.append("    salesforce.'user' ");
+		sql.append("    salesforce.user ");
 		sql.append("WHERE ");
 		sql.append("    sfid = ? ");
 
