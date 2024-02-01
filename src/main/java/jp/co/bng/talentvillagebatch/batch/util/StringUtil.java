@@ -216,4 +216,26 @@ public class StringUtil {
 		return Stream.of(sourceStr.split(sep)).toList() ;
 	}
 	
+	/**
+	 * count回数の指定文字列を戻す
+	 * 
+	 * @param sourceStr
+	 * @param count
+	 * @return sourceStr * count
+	 */
+	public static String toCountString(String sourceStr, Integer count) {
+
+		if (sourceStr == null || "".equals(sourceStr)) {
+			return null;
+		}
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("");
+        
+        for (int i = 0; i < count; i++) {
+            sb.append(sourceStr);
+        }
+        
+		return sb.toString() ;
+	}
 }

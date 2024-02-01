@@ -111,7 +111,7 @@ public class DbChatDao extends DbBaseDao {
 		sql.append("WHERE ");
 		sql.append("    post_at >= ? ");
 		sql.append("ORDER BY ");
-		sql.append("    channel_id,post_at ");
+		sql.append("    channel_id,time_stamp,version asc");
 		
 
 		List<DbChatDto> chatLst = null;
