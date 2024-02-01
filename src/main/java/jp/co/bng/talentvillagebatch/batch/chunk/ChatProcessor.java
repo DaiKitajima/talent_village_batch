@@ -137,7 +137,7 @@ public class ChatProcessor implements ItemProcessor<DbChatDto, DbChatSfDto> {
 				break;
 			} 
 		}
-		list.add(index, this.getFixedMessage(chat));
+		list.add(index + 1 , this.getFixedMessage(chat));
 		
 		return list.stream().collect(Collectors.joining(CommonConstant.CHAT_LINE_SEP));
 	}
@@ -169,7 +169,7 @@ public class ChatProcessor implements ItemProcessor<DbChatDto, DbChatSfDto> {
 		return fixedMessage.toString();
 	}
 	
-	/* 外部ID取得 */
+	/* SlackID取得 */
 	private String getSlackIdByChannelId(String channelId) {
 		log.info("START:" + new Object(){}.getClass().getEnclosingMethod().getName());
 		ChannelDto channel = channelDao.getChannelBySfid(channelId);
