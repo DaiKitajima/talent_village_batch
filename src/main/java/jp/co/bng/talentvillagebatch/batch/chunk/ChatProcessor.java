@@ -92,7 +92,7 @@ public class ChatProcessor implements ItemProcessor<DbChatDto, DbChatSfDto> {
 			// 新規チャット内容
 			if(chat.getVersion() == 0 ){
 				Optional<DbChatSfDto> lastChat = chatSfLst.stream().max(Comparator.comparing(DbChatSfDto::getNoC));
-				String updateContent = lastChat.get().getContentC() + CommonConstant.CHAT_LINE_SEP+ this.getFixedMessage(chat);
+				String updateContent = lastChat.get().getContentC() + this.getFixedMessage(chat);
 				// 既存内容 + 更新内容が40000文字より大きい場合、枝番増やす。そうではない場合、既存内容の最大枝番を設定
 				if(updateContent.length() > CommonConstant.MESSAGE_CONTENT_RECORD_SIZE) {
 					no = (lastChat.get().getNoC()==null ? 0 : lastChat.get().getNoC())  + 1 ;
@@ -122,9 +122,20 @@ public class ChatProcessor implements ItemProcessor<DbChatDto, DbChatSfDto> {
 	
 	/* 既存チャット内容編集の場合、編集内容と既存内容を合わせて整形して取得 ※1万文字バッファ持ってる為、容量オーバー考慮せず
 	 * 整形メッセージの例文：
-	 *   1706689916.070655 次郎:konichiha
-	 *	   1706689916.070655 次郎:こんにちは
-	 *	  	 1706689916.070655 次郎:こんにちは、太郎君
+			[2024/02/02 14:20:00]モモ 太郎(候補者：sfid-cand000001)
+			はい、全て完了した。
+			1989999.060700@0
+			    [2024/02/02 14:20:10]モモ 太郎(候補者：sfid-cand000001）
+			    はい、全て完了した。⇒バッチ作成（talent-village-batch）60%
+			    1989999.060700@1
+			        [2024/02/02 14:20:20]モモ 太郎(候補者：sfid-cand000001)
+			        はい、全て完了した。
+			        ⇒バッチ作成（talent-village-batch）60%
+			        1989999.060700@2
+			            【削除済み】[2024/02/02 14:20:30]モモ 太郎(候補者：sfid-cand000001)
+			            はい、全て完了した。
+			            ⇒バッチ作成（talent-village-batch）60%
+			            1989999.060700@3@deleted
     */
 	private String getUpdateMessage(String oldContent, DbChatDto chat) {
 		List<String> list = new ArrayList<String>();
@@ -143,27 +154,34 @@ public class ChatProcessor implements ItemProcessor<DbChatDto, DbChatSfDto> {
 	}
 
 	/* 新規チャット内容を整形して取得 
-	 * 整形メッセージの例文： 1706689915.060655 太郎:こんにちは 
+	 * 整形メッセージの例文： 
+	 * [2024/02/02 14:10:00]モモ 太郎（コンサルタント：sfid-cnsl000001）
+	 * 各位、作業進捗を報告してください。
+	 * 1988888.060688@0
+	 * 
 	*/
 	private String getFixedMessage(DbChatDto chat) {
 		log.info("START:" + new Object(){}.getClass().getEnclosingMethod().getName());
 		// 候補者名前取得 TODO:企業担当者の場合、フェーズ２で対応
 		String name = "";
+		String type = "";
 		if(UserType.CONSULTANT.toString().equals(chat.getParticipantType())) {
 			UserDto user = userDao.getUserBySfid(chat.getParticipantId());
 			name = user.getLastname() + user.getFirstname();
+			type = UserType.CONSULTANT.getLabel();
 		}else if(UserType.CANDIDATE.toString().equals(chat.getParticipantType())) {
 			PersonAccountDto account = personAccountDao.getPersonAccountBySfid(chat.getParticipantId());
 			name = account.getLastName() + account.getFirstName();
+			type = UserType.CANDIDATE.getLabel();
 		}
 		
+		String indent = StringUtil.toCountString(CommonConstant.CHAT_INDENT, chat.getVersion());
 		StringBuilder fixedMessage = new StringBuilder();
-		fixedMessage.append(StringUtil.toCountString(CommonConstant.CHAT_INDENT, chat.getVersion()));
-		fixedMessage.append(chat.getTimeStamp());
-		fixedMessage.append(CommonConstant.CHAT_SUBJECT_SEP);
-		fixedMessage.append(name);
-		fixedMessage.append(CommonConstant.CHAT_COMMA);
-		fixedMessage.append(chat.getMessage());
+		fixedMessage.append(indent + (chat.isDeleted()? "【削除済み】": "" ) + "["+ chat.getPostAt() + "]" + name + "(" + type + CommonConstant.CHAT_COMMA + chat.getParticipantId() + ")" + CommonConstant.CHAT_LINE_SEP);
+		for(String content : chat.getMessage().split(CommonConstant.CHAT_LINE_SEP)){
+			fixedMessage.append(indent + content + CommonConstant.CHAT_LINE_SEP);
+		}
+		fixedMessage.append(indent + chat.getTimeStamp() + "@" + chat.getVersion() + (chat.isDeleted()? "@deleted": ""  + CommonConstant.CHAT_LINE_SEP) );
 		
 		log.info("END:" + new Object(){}.getClass().getEnclosingMethod().getName());
 		return fixedMessage.toString();
