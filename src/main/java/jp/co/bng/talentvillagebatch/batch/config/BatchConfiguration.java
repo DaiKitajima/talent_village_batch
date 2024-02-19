@@ -20,6 +20,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import jp.co.bng.talentvillagebatch.batch.chunk.ChatProcessor;
 import jp.co.bng.talentvillagebatch.batch.chunk.ChatReader;
 import jp.co.bng.talentvillagebatch.batch.listener.JobListener;
+import jp.co.bng.talentvillagebatch.batch.tasklet.SendGridTasklet;
 import jp.co.bng.talentvillagebatch.db_chat.dto.DbChatDto;
 import jp.co.bng.talentvillagebatch.db_chat.dto.DbChatSfDto;
 
@@ -33,29 +34,52 @@ public class BatchConfiguration {
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
 	
-	// Job起動
-	@Scheduled(cron="${scheduled.cron.task}")
-	public ExitStatus start() throws Exception {
+	// Job起動(履歴同期)
+	@Scheduled(cron="${scheduled.cron.task1}")
+	public ExitStatus startJob1() throws Exception {
 
        JobExecution jobExet = jobLauncher.run(
-    		   									chatHistorySynchronizeJob(null,null,null),
+    		   									chatHistorySynchronizeJob(null,null),
     		   									new JobParametersBuilder()
-    		   											.addDate("batchStartDate", new Date())
+    		   											.addDate("batchJob1StartDate", new Date())
+    		   											.toJobParameters()
+    		   								);
+       return jobExet.getExitStatus();
+   }
+	
+	// Job起動(新着チャット通知)
+	@Scheduled(cron="${scheduled.cron.task2}")
+	public ExitStatus startJob2() throws Exception {
+
+       JobExecution jobExet = jobLauncher.run(
+    		   									newChatAnnounceJob(null,null),
+    		   									new JobParametersBuilder()
+    		   											.addDate("batchJob2StartDate", new Date())
     		   											.toJobParameters()
     		   								);
        return jobExet.getExitStatus();
    }
 	
 	// ====================================================================
+	// 新着チャット通知Job定義
+	// ====================================================================
+	@Bean
+	public Job newChatAnnounceJob(JobListener jobListener, Step stepNewChatAnnounce) {
+		return jobBuilderFactory.get("newChatAnnounceJob")
+				.listener(jobListener)
+				.start(stepNewChatAnnounce)
+				.build();
+	}
+
+	// ====================================================================
 	// チャット履歴同期Job定義
 	// ====================================================================
 	@Bean
-	public Job chatHistorySynchronizeJob(JobListener jobListener, Step stepChatSync, Step stepSendGrid) {
+	public Job chatHistorySynchronizeJob(JobListener jobListener, Step stepChatSync) {
 		return jobBuilderFactory.get("chatHistorySynchronizeJob")
 //			.incrementer(new RunIdIncrementer())
 			.listener(jobListener)
 			.start(stepChatSync)
-//			.next(stepSendGrid)
 			.build();
 	}
 	
@@ -75,16 +99,12 @@ public class BatchConfiguration {
 	}
 	
 	// ====================================================================
-	// 履歴同期後送信Step定義
+	// 新着チャット通知Step定義
 	// ====================================================================
-//	@Bean
-//	public Step stepSendGrid(ChatReader chatReader, 
-//			ChatProcessor chatProcessor, 
-//			ClassifierCompositeItemWriter<DbChatDto> compositeChatWriter) {
-//		return stepBuilderFactory.get("stepSendGrid")
-//				.reader(chatReader)
-//				.processor(chatProcessor)
-//				.writer(compositeChatWriter)
-//				.build();
-//	}
+	@Bean
+	public Step stepNewChatAnnounce() {
+		return stepBuilderFactory.get("stepNewChatAnnounce")
+				.tasklet(new SendGridTasklet())
+				.build();
+	}
 }
