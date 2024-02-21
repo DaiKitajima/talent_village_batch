@@ -1,6 +1,5 @@
 package jp.co.bng.talentvillagebatch.batch.tasklet;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
